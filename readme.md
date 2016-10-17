@@ -1,6 +1,6 @@
 # rop-chainer
 
-rop-chainer is a simple tool that finds gadgets and creates gadget chains for 32-bit ELF binaries. It uses the (capstone)[https://github.com/aquynh/capstone] framework for disassembling byte sequences obtained by backtracking from located `ret` instructions.
+rop-chainer is a simple tool that finds gadgets and creates gadget chains for 32-bit ELF binaries. It uses the [capstone](https://github.com/aquynh/capstone) framework for disassembling byte sequences obtained by backtracking from located `ret` instructions.
 
 ## Usage
 
