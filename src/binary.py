@@ -3,18 +3,18 @@ from ctypes import *
 from sys import exit
 
 class Flags:
+    ELFMAG        = 0x7F
     ELFCLASS32    = 0x01
     ELFDATALSB    = 0x01
     EM_X86        = 0x03
     PF_X          = 0x1
-    SF_ALLOC      = 0x2
-    SF_EXECINSTR  = 0x4
+    SHF_ALLOC     = 0x2
+    SHF_EXECINSTR = 0x4
 
 class Offsets:
     EI_MAGIC    = 0x00
     EI_CLASS    = 0x04
     EI_DATA     = 0x05
-    EMachine    = 0x12
 
 class FileHeader(LittleEndianStructure):
     _fields_ = [("e_ident",         c_ubyte * 16),
@@ -79,6 +79,9 @@ class Binary:
 
     def __parseFileHeader(self):
         self.__file_header = FileHeader.from_buffer_copy(self.__binary)
+        if self.__file_header.e_ident[EI_MAGIC] != 0x7f:
+            print("Not an ELF file")
+            exit()
 
     def __parseSectionsHeaders(self):
         base = self.__binary[self.__file_header.e_shoff:]
