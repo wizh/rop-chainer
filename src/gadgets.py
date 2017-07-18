@@ -16,10 +16,10 @@ class Gadgets:
 
         self.__syscall_terminals =\
             [
-                (b"\xcd\x80", 2),                         # int 0x80
-                (b"\x0f\x34", 2),                         # sysenter
-                (b"\x0f\x05", 2),                         # syscall
-                (b"\x65\xff\x15\x10\x00\x00\x00", 7),     # call DWORD PTR gs:0x10
+                (b"\xcd\x80", 2),                       # int 0x80
+                (b"\x0f\x34", 2),                       # sysenter
+                (b"\x0f\x05", 2),                       # syscall
+                (b"\x65\xff\x15\x10\x00\x00\x00", 7),   # call DWORD PTR gs:0x10
             ]
 
         for section in sections:

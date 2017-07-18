@@ -28,7 +28,7 @@ class Strings:
                           "vaddr"  : section["vaddr"] + index}]
 
     def prettyPrintStrings(self):
-        print 'Strings:'  
+        print 'Strings:'
         for string in self.__strings:
             print '0x%x: %s' % (string["vaddr"], string["text"])
 
