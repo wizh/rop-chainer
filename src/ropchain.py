@@ -104,7 +104,9 @@ class Ropchain:
 
         # Syscall
 
-        syscall = self.__find_instruction("int 0x80|sysenter|syscall|call DWORD PTR gs:0x10")[0]
+        syscall = self.__find_instruction(("int 0x80|sysenter|syscall|call "
+                                           "DWORD PTR gs:0x10"))[0]
+
         if not syscall:
             missing_gadgets.append("syscall")
 
@@ -204,7 +206,6 @@ class Ropchain:
 
         # Set first argument to 0xb (syscall entry for execve)
         chain += pack('<I', xorEax["vaddr"])  # init eax with \x00
-        chain += pack('<I', data_address + 8)
         chain += self.__pad_chain(xorEax, {"ebx": data_address + 8,
                                            "ecx": data_address + 8})
                                               # keep first and second arguments
