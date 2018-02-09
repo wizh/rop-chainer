@@ -56,10 +56,10 @@ class SectionHeader(LittleEndianStructure):
 
 class Binary(object):
     def __init__(self, options):
-        self.__binary = None
-        self.__file_header = None
-        self.__section_headers = []
-        self.__program_headers = []
+        self._binary = None
+        self._file_header = None
+        self._section_headers = []
+        self._program_headers = []
 
         self._parse_binary(options)
 
@@ -73,76 +73,78 @@ class Binary(object):
     def _parse_binary(self, options):
         try:
             with open(options.binary, "rb") as fd:
-                self.__binary = bytearray(fd.read())
+                self._binary = bytearray(fd.read())
         except EnvironmentError:
             print "Can't read binary"
             exit()
 
     def _parse_file_header(self):
-        self.__file_header = FileHeader.from_buffer_copy(self.__binary)
-        if self.__file_header.e_ident[OFFSETS['EI_MAGIC']] != 0x7f:
+        self._file_header = FileHeader.from_buffer_copy(self._binary)
+        if self._file_header.e_ident[OFFSETS['EI_MAGIC']] != 0x7f:
             print "Not an ELF file"
             exit()
 
     def _parse_sections_headers(self):
-        base = self.__binary[self.__file_header.e_shoff:]
-        for _ in range(self.__file_header.e_shnum):
+        base = self._binary[self._file_header.e_shoff:]
+        for _ in range(self._file_header.e_shnum):
             header = SectionHeader.from_buffer_copy(base)
 
-            self.__section_headers.append(header)
-            base = base[self.__file_header.e_shentsize:]
+            self._section_headers.append(header)
+            base = base[self._file_header.e_shentsize:]
 
     def _parse_program_headers(self):
-        base = self.__binary[self.__file_header.e_phoff:]
-        for _ in range(self.__file_header.e_phnum):
+        base = self._binary[self._file_header.e_phoff:]
+        for _ in range(self._file_header.e_phnum):
             header = ProgramHeader.from_buffer_copy(base)
-            self.__program_headers.append(header)
+            self._program_headers.append(header)
 
-            base = base[self.__file_header.e_phentsize:]
+            base = base[self._file_header.e_phentsize:]
 
     def get_data_section_offset(self):
-        name_indexes = str(self.__binary[(self.__section_headers[
-            self.__file_header.e_shstrndx].sh_offset):])
-        for i in range(self.__file_header.e_shnum):
-            if (name_indexes[self.__section_headers[i].sh_name:]).split('\0')[0] == ".data":
-                return self.__section_headers[i].sh_addr
+        name_indexes = str(self._binary[(self._section_headers[
+            self._file_header.e_shstrndx].sh_offset):])
+        for i in range(self._file_header.e_shnum):
+            if (name_indexes[self._section_headers[i].sh_name:]).split('\0')[0] == ".data":
+                return self._section_headers[i].sh_addr
         return None
 
     def get_data_sections(self):
         data_sections = []
-        for section in self.__section_headers:
+        for section in self._section_headers:
             if not ((section.sh_flags & FLAGS['SHF_ALLOC']) and
                     (section.sh_flags & FLAGS['SHF_EXECINSTR'])):
                 data_sections += \
                     [{"offset" : section.sh_offset,
                       "size"   : section.sh_size,
                       "vaddr"  : section.sh_addr,
-                      "data"   : str(self.__binary[section.sh_offset:
+                      "data"   : str(self._binary[section.sh_offset:
                                                    section.sh_offset+section.sh_size])}]
         return data_sections
 
     def get_exec_sections(self):
         exec_sections = []
-        for segment in self.__program_headers:
+        for segment in self._program_headers:
             if segment.p_flags & FLAGS['PF_X']:
                 exec_sections += \
                     [{"offset" : segment.p_offset,
                       "size"   : segment.p_memsz,
                       "vaddr"  : segment.p_vaddr,
-                      "data"   : str(self.__binary[segment.p_offset:
+                      "data"   : str(self._binary[segment.p_offset:
                                                    segment.p_offset + segment.p_memsz])}]
         return exec_sections
 
     def check_arch(self):
         # Check architecture
-        if self.__file_header.e_machine != FLAGS['EM_X86']:
+        if self._file_header.e_machine != FLAGS['EM_X86']:
             print "Architecture target not supported"
             exit()
+
         # Check 32/64 bit
-        if self.__file_header.e_ident[OFFSETS['EI_CLASS']] != FLAGS['ELFCLASS32']:
+        if self._file_header.e_ident[OFFSETS['EI_CLASS']] != FLAGS['ELFCLASS32']:
             print "Architecture mode not supported"
             exit()
+
         # Check little/big endian
-        if self.__file_header.e_ident[OFFSETS['EI_DATA']] != FLAGS['ELFDATALSB']:
+        if self._file_header.e_ident[OFFSETS['EI_DATA']] != FLAGS['ELFDATALSB']:
             print "Architecture endian not supported"
             exit()

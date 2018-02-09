@@ -3,28 +3,28 @@ import capstone as cs
 
 class Gadgets(object):
     def __init__(self, sections, options):
-        self.__options = options
+        self._options = options
         self._gadgets = []
 
-        self.__ret_terminals =\
+        self._ret_terminals =\
             [
-                (b"\xc3", 1),                # ret
+                (b"\xc3", 1),  # ret
                 (b"\xc2[\x00-\xff]{2}", 3),  # ret <imm>
-                (b"\xcb", 1),                # retf
+                (b"\xcb", 1),  # retf
                 (b"\xca[\x00-\xff]{2}", 3),  # retf <imm>
             ]
 
-        self.__syscall_terminals =\
+        self._syscall_terminals =\
             [
-                (b"\xcd\x80", 2),                       # int 0x80
-                (b"\x0f\x34", 2),                       # sysenter
-                (b"\x0f\x05", 2),                       # syscall
-                (b"\x65\xff\x15\x10\x00\x00\x00", 7),   # call DWORD PTR gs:0x10
+                (b"\xcd\x80", 2),  # int 0x80
+                (b"\x0f\x34", 2),  # sysenter
+                (b"\x0f\x05", 2),  # syscall
+                (b"\x65\xff\x15\x10\x00\x00\x00", 7),  # call DWORD PTR gs:0x10
             ]
 
         for section in sections:
-            self._locate_gadgets(section, self.__ret_terminals, "ret")
-            self._locate_gadgets(section, self.__syscall_terminals, "syscall")
+            self._locate_gadgets(section, self._ret_terminals, "ret")
+            self._locate_gadgets(section, self._syscall_terminals, "syscall")
 
         self._remove_unusable_gadgets()
         self._delete_duplicate_gadgets()
@@ -55,7 +55,7 @@ class Gadgets(object):
             matches = [match.start() for match in re.finditer(terminal[0],
                                                               section["data"])]
             for index in matches:
-                for i in range(self.__options.depth):
+                for i in range(self._options.depth):
                     gadget = ""
                     instructions = disassembler.disasm_lite(
                         section["data"][index-i:index+terminal[1]],
