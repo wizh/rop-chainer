@@ -15,7 +15,7 @@ def main():
     gadgets.pretty_print_gadgets()
 
     strings = Strings(exec_sections + data_sections)
-    strings.prettyPrintStrings()
+    strings.pretty_print_strings()
 
     ropchain = Ropchain(gadgets.get_gadgets(), binary.get_data_section_offset())
     ropchain.pretty_print_chain()
