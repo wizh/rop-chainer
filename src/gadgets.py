@@ -1,10 +1,10 @@
-import capstone as cs
 import re
+import capstone as cs
 
-class Gadgets:
+class Gadgets(object):
     def __init__(self, sections, options):
         self.__options = options
-        self.__gadgets = []
+        self._gadgets = []
 
         self.__ret_terminals =\
             [
@@ -23,14 +23,33 @@ class Gadgets:
             ]
 
         for section in sections:
-            self.__locateGadgets(section, self.__ret_terminals, "ret")
-            self.__locateGadgets(section, self.__syscall_terminals, "syscall")
+            self._locate_gadgets(section, self.__ret_terminals, "ret")
+            self._locate_gadgets(section, self.__syscall_terminals, "syscall")
 
-        self.__removeUnusableGadgets()
-        self.__deleteDuplicateGadgets()
-        self.__sortGadgetsAlphabetically()
+        self._remove_unusable_gadgets()
+        self._delete_duplicate_gadgets()
+        self._sort_gadgets_alphabetically()
 
-    def __locateGadgets(self, section, terminals, gadget_type):
+    @staticmethod
+    def _check_illegal(insts):
+        illegal = ['int3', 'db']
+        for inst in insts:
+            for element in illegal:
+                if inst == element:
+                    return True
+        return False
+
+    @staticmethod
+    def _check_multiple_terminals(terminals, insts):
+        count = 0
+        for inst in insts.split(" ; "):
+            for terminal in terminals:
+                if inst.split(" ")[0] == terminal:
+                    count += 1
+                    break
+        return count > 1
+
+    def _locate_gadgets(self, section, terminals, gadget_type):
         disassembler = cs.Cs(cs.CS_ARCH_X86, cs.CS_MODE_32)
         for terminal in terminals:
             matches = [match.start() for match in re.finditer(terminal[0],
@@ -48,73 +67,56 @@ class Gadgets:
                     if gadget:
                         gadget = gadget.replace("  ", " ")
                         gadget = gadget[:-3]
-                        self.__gadgets += [{"vaddr" : section["vaddr"]+index-i,
-                                            "insts" : gadget,
-                                            "gadget_type"  : gadget_type}]
+                        self._gadgets += [{"vaddr" : section["vaddr"]+index-i,
+                                           "insts" : gadget,
+                                           "gadget_type" : gadget_type}]
 
-    def __checkIllegal(self, insts):
-        illegal = ['int3', 'db']
-        for inst in insts:
-            for element in illegal:
-                if inst == element:
-                    return True
-        return False
-
-    def __checkMultipleTerminals(self, terminals, insts):
-        count = 0
-        for inst in insts.split(" ; "):
-            for terminal in terminals:
-                if inst.split(" ")[0] == terminal:
-                    count += 1
-                    break
-        return count > 1
-
-    def __removeUnusableGadgets(self):
+    def _remove_unusable_gadgets(self):
         terminals = ["ret", "retf", "int", "sysenter", "jmp", "call", "syscall"]
         usable_gadgets = []
-        for gadget in self.__gadgets:
+        for gadget in self._gadgets:
             insts = gadget["insts"].split(" ; ")
             if insts[-1] not in terminals:
                 continue
-            if self.__checkIllegal(gadget["insts"]):
+            if self._check_illegal(gadget["insts"]):
                 continue
-            if self.__checkMultipleTerminals(terminals, gadget["insts"]):
+            if self._check_multiple_terminals(terminals, gadget["insts"]):
                 continue
             usable_gadgets += [gadget]
 
-        self.__gadgets = usable_gadgets
+        self._gadgets = usable_gadgets
 
-    def __deleteDuplicateGadgets(self):
+    def _delete_duplicate_gadgets(self):
         unique_gadgets = []
         unique_insts = []
-        for gadget in self.__gadgets:
+        for gadget in self._gadgets:
             if gadget["insts"] in unique_insts:
                 continue
             unique_insts.append(gadget["insts"])
             unique_gadgets.append(gadget)
-        self.__gadgets = unique_gadgets
+        self._gadgets = unique_gadgets
 
-    def __sortGadgetsAlphabetically(self):
-        self.__gadgets = sorted(self.__gadgets, key=lambda key : key["insts"])
+    def _sort_gadgets_alphabetically(self):
+        self._gadgets = sorted(self._gadgets, key=lambda key: key["insts"])
 
-    def getGadgets(self):
-        return self.__gadgets
+    def get_gadgets(self):
+        return self._gadgets
 
-    def prettyPrintGadgets(self):
-        num_ret_gadgets = len([x for x in self.__gadgets
-                                   if x["gadget_type"] == "ret"])
-        num_sys_gadgets = len([x for x in self.__gadgets
-                                   if x["gadget_type"] == "syscall"])
+    def pretty_print_gadgets(self):
+        num_ret_gadgets = len([x for x in self._gadgets
+                               if x["gadget_type"] == "ret"])
+        num_sys_gadgets = len([x for x in self._gadgets
+                               if x["gadget_type"] == "syscall"])
 
         print 'Ret-gadgets:'
-        for gadget in self.__gadgets:
+        for gadget in self._gadgets:
             if gadget["gadget_type"] == "ret":
                 print "0x%x: %s" % (gadget["vaddr"], gadget["insts"])
 
         print '------------------------------------------------------'
 
         print 'Syscall-gadgets:'
-        for gadget in self.__gadgets:
+        for gadget in self._gadgets:
             if gadget["gadget_type"] == "syscall":
                 print "0x%x: %s" % (gadget["vaddr"], gadget["insts"])
 
